@@ -1,6 +1,5 @@
 import streamlit as st
 import html
-import os
 import re
 
 # ─────────────────────────────────────────────
@@ -72,6 +71,11 @@ def keyword_in_text(text: str, keyword: str) -> bool:
 def main():
     st.set_page_config(page_title="試験成績書 執筆指南書", page_icon="📝", layout="wide")
 
+    # ── Session Stateの初期化（入力値保持用） ──
+    if "nerai_input" not in st.session_state:
+        st.session_state.nerai_input = ""
+    if "matome_input" not in st.session_state:
+        st.session_state.matome_input = ""
     if "checklist" not in st.session_state:
         st.session_state.checklist = {
             "check1": False,
@@ -82,7 +86,7 @@ def main():
     st.title("📝 試験成績書 執筆指南書 & チェックツール")
     st.markdown("試験成績書の執筆ガイドラインと、原稿の論理性を確認できる自主チェックツールを提供する。")
 
-    # ─── サイドバー ───────────────────────────
+    # ── サイドバー ──
     st.sidebar.header("📖 記載例の表示切替")
     selected_type = st.sidebar.radio(
         "試験タイプを選択",
@@ -90,7 +94,7 @@ def main():
     )
     ex = EXAMPLE_DATA[selected_type]
 
-    # ─── タブ構成（結果と考察を統合） ───────────────
+    # ── タブ構成 ──
     tabs = st.tabs([
         "1. 成果とねらい",
         "2. 試験方法",
@@ -101,7 +105,7 @@ def main():
         "🔍 整合性チェック"
     ])
 
-    # ─── 各タブコンテンツ ───
+    # ── 各タブコンテンツ ──
     with tabs[0]:
         st.header("1. これまで得られた成果及び本年度のねらいどころ")
         st.info("試験の背景（Why）と目的（What）を明確にする導入部分である。")
@@ -164,28 +168,56 @@ def main():
 
     with tabs[5]:
         st.header("📊 統計記載ルール")
-        st.info("農業試験成績書における統計記載の標準ルールを示す。")
+        st.info("農業試験成績書における統計記載の標準ルールと、高度な解析手法の記述例を示す。")
+        
+        st.markdown("### 1. 基本的な有意差の書き方（分散分析・t検定等）")
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("### 基本的な有意差の書き方\n| 状況 | 記載例 |\n|------|--------|\n| 有意差あり（5%） | `p < 0.05` |\n| 有意差あり（1%） | `p < 0.01` |\n| 有意差なし | `p > 0.05` または `p = 0.38` |\n| 傾向差（10%水準） | `p < 0.10（10%水準で有意傾向）` |")
+            st.markdown("""
+            | 状況 | 記載例 |
+            |------|--------|
+            | 有意差あり（5%） | `p < 0.05` |
+            | 有意差あり（1%） | `p < 0.01` |
+            | 有意差なし | `p > 0.05` または `p = 0.38` |
+            | 傾向差（10%水準） | `p < 0.10（10%水準で有意傾向）` |
+            """)
         with col2:
-            st.markdown("### 表現の使い分け\n| 状況 | 推奨表現 |\n|------|---------|\n| 事実 | 「〜が認められた」「〜を上回った（p < 0.05）」 |\n| 考察 | 「〜と考えられる」「〜と推察される」 |\n| 傾向 | 「増加する傾向が認められた」 |")
+            st.markdown("""
+            | 状況 | 推奨表現 |
+            |------|---------|
+            | 事実 | 「〜が認められた」「〜を上回った（p < 0.05）」 |
+            | 考察 | 「〜と考えられる」「〜と推察される」 |
+            | 傾向 | 「増加する傾向が認められた」 |
+            """)
+            
+        st.markdown("---")
+        st.markdown("### 2. 高度な統計解析手法の記載例（GLM・GLMM等）")
+        st.markdown("""
+        近年推奨されるモデリング手法を用いた場合の記述テンプレート。
+        
+        | 分析手法 | 記載例 |
+        |------|--------|
+        | **GLM (一般化線形モデル)**<br>※二項分布など | 「〇〇病の発生の有無を目的変数としたロジスティック回帰分析の結果、処理区の効果は有意であった（尤度比検定, p < 0.05）。」 |
+        | **GLMM (一般化線形混合モデル)**<br>※変量効果の考慮 | 「圃場や反復間ブロックを変量効果として組み込んだGLMMにおいて、新規系統Aは標準品種に対し有意な増収効果を示した（p < 0.01）。」 |
+        | **ベイズ推定 (MCMC)** | 「ベイズ推論による事後分布を評価した結果、新規施肥法の効果量は平均〇〇であり、95%ベイズ信用区間が0を跨がなかったため、確実な増収効果があると判断された。」 |
+        """)
 
-    # ─── Tab 7: 整合性チェック（インデックスがずれるため注意） ───
     with tabs[6]:
         st.header("🔍 「ねらい」と「まとめ」の整合性チェック")
         st.warning("⚠️ 成績書で最も多いミスは、**ねらい（問い）とまとめ（答え）の食い違い**である。")
 
         col1, col2 = st.columns(2)
         with col1:
-            user_nerai = st.text_area(
+            st.text_area(
                 "✍️ 「ねらい（目的）」を入力",
+                key="nerai_input",
                 height=150,
                 placeholder="例：本年度は、〇〇の播種期および施肥条件が収量に及ぼす影響を明らかにする。"
             )
         with col2:
-            user_matome = st.text_area(
+            st.text_area(
                 "✍️ 「まとめ（結論）」を入力",
+                key="matome_input",
                 height=150,
                 placeholder="例：1. 播種期を遅らせることで収量は増加した。\n2. 施肥条件による有意な差は認められなかった。"
             )
@@ -194,17 +226,17 @@ def main():
 
         # ── AIプロンプト自動生成 ──
         st.markdown("### 🤖 外部AI用 チェックプロンプト生成")
-        st.write("入力した文章から、ChatGPTやGemini等に貼り付けるための指示文を自動生成する。右上のコピーボタンを押してAIに尋ねてみること。")
+        st.write("入力した文章から、許可されたAI環境に貼り付けるための指示文を自動生成する。右上のコピーボタンを押してAIに尋ねてみること。")
 
-        if user_nerai.strip() or user_matome.strip():
+        if st.session_state.nerai_input.strip() or st.session_state.matome_input.strip():
             ai_prompt = f"""あなたは農業試験研究者向けの試験成績書の品質評価AIです。
 以下の「ねらい」と「まとめ」の論理的整合性を評価してください。
 
 【ねらい（目的・検証項目）】
-{user_nerai if user_nerai.strip() else "(未入力)"}
+{st.session_state.nerai_input if st.session_state.nerai_input.strip() else "(未入力)"}
 
 【まとめ（結論）】
-{user_matome if user_matome.strip() else "(未入力)"}
+{st.session_state.matome_input if st.session_state.matome_input.strip() else "(未入力)"}
 
 以下の観点で評価し、日本語で簡潔に回答してください。出力はMarkdown形式で構造化してください。
 
@@ -228,28 +260,28 @@ def main():
         p_col1, p_col2 = st.columns(2)
         with p_col1:
             st.caption("【ねらい】")
-            if user_nerai:
+            if st.session_state.nerai_input:
                 st.markdown(
                     f"<div style='background-color:#f0f2f6;padding:15px;border-radius:5px;'>"
-                    f"{highlight_keyword(user_nerai, keyword)}</div>",
+                    f"{highlight_keyword(st.session_state.nerai_input, keyword)}</div>",
                     unsafe_allow_html=True
                 )
             else:
                 st.write("※未入力")
         with p_col2:
             st.caption("【まとめ】")
-            if user_matome:
+            if st.session_state.matome_input:
                 st.markdown(
                     f"<div style='background-color:#f0f2f6;padding:15px;border-radius:5px;'>"
-                    f"{highlight_keyword(user_matome, keyword)}</div>",
+                    f"{highlight_keyword(st.session_state.matome_input, keyword)}</div>",
                     unsafe_allow_html=True
                 )
             else:
                 st.write("※未入力")
 
         if keyword:
-            in_nerai = keyword_in_text(user_nerai, keyword)
-            in_matome = keyword_in_text(user_matome, keyword)
+            in_nerai = keyword_in_text(st.session_state.nerai_input, keyword)
+            in_matome = keyword_in_text(st.session_state.matome_input, keyword)
             if in_nerai and not in_matome:
                 st.error(f"🚨 『{keyword}』が「ねらい」にはあるが「まとめ」に記載されていない。書き漏らしの可能性あり。")
             elif not in_nerai and in_matome:
@@ -261,7 +293,7 @@ def main():
 
         st.divider()
 
-        # ── セルフチェックリスト ──
+        # ── セルフチェックリストとダウンロード ──
         st.markdown("### 💡 最終セルフチェックリスト")
         
         st.session_state.checklist["check1"] = st.checkbox(
@@ -280,6 +312,15 @@ def main():
         all_checked = all(st.session_state.checklist.values())
         if all_checked:
             st.success("🎉 すべてにチェックがついた。論理的に一貫した成績書になっている。")
+            
+            # 結合テキストの生成とダウンロードボタン
+            export_text = f"【ねらい】\n{st.session_state.nerai_input}\n\n【まとめ】\n{st.session_state.matome_input}"
+            st.download_button(
+                label="📥 原稿をダウンロード（テキストファイル）",
+                data=export_text,
+                file_name="seiseki_draft.txt",
+                mime="text/plain"
+            )
         else:
             unchecked = 3 - sum(st.session_state.checklist.values())
             st.caption(f"残り {unchecked} 項目 — 確認が終わったらチェックを入れること。")
