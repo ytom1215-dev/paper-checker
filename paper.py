@@ -286,7 +286,7 @@ def main():
             if in_nerai and not in_matome:
                 st.error(f"🚨 『{keyword}』が「ねらい」にはあるが「まとめ」に記載されていない。書き漏らしの可能性あり。")
             elif not in_nerai and in_matome:
-                st.warning(f"⚠️ 『{keyword}』が「まとめ」に突然登場している。「ねらい」にも検証項目として追記するか、まとめの記載を見知すこと。")
+                st.warning(f"⚠️ 『{keyword}』が「まとめ」に突然登場している。「ねらい」にも検証項目として追記するか、まとめの記載を見直すこと。")
             elif in_nerai and in_matome:
                 st.success(f"✅ 『{keyword}』は両方に記載されている。")
             else:
@@ -326,42 +326,20 @@ def main():
             unchecked = 3 - sum(st.session_state.checklist.values())
             st.caption(f"残り {unchecked} 項目 — 確認が終わったらチェックを入れること。")
 
-    # ── 新設：原稿まるごと査読タブ ──
+    # ── 新設（改）：外部AI連携用の査読プロンプト表示 ──
     with tabs[7]:
-        st.header("🦅 試験成績書 まるごと査読・審査対策")
-        st.info("成績書全体の原稿をチェックし、専門部会や審査会で指導を受けやすい『事実と考察の混同』『統計解釈の不備』を先回りして査読します。")
+        st.header("🦅 試験成績書 まるごと査読・審査対策（外部AI連携）")
+        st.info("成績書全体を外部のAI（GeminiやChatGPT、Claude等）に読み込ませて、専門部会レベルの厳しい査読を受けます。")
 
-        # ファイルアップロード
-        uploaded_file = st.file_uploader(
-            "📄 成績書のファイルをアップロード（TXT / MDファイル等）", 
-            type=["txt", "md", "csv"]
-        )
-        
-        file_text = ""
-        if uploaded_file is not None:
-            try:
-                file_text = uploaded_file.read().decode("utf-8")
-                st.success("ファイルの読み込みに成功しました。")
-            except Exception as e:
-                st.error(f"ファイルの読み込みエラー: {e}")
+        st.markdown("""
+        ### 使い方
+        1. 普段利用している**生成AI（Gemini, ChatGPT, Claudeなど）**を開きます。
+        2. 査読したい成績書のファイル（Word, PDF, テキストなど）を**AIにアップロード**します（またはテキストをAIに直接貼り付けます）。
+        3. 以下の**「査読用プロンプト」をコピーして、一緒に送信**してください。
+        """)
 
-        # テキストエリア（ファイルがアップロードされたら自動で中身が同期される）
-        review_input = st.text_area(
-            "✍️ または、成績書の原稿テキストをここに直接貼り付けてください：",
-            value=file_text,
-            height=300,
-            placeholder="【ねらい】...\n【試験方法】...\n【試験経過】...\n【結果及び考察】...\n【まとめ】..."
-        )
-
-        if review_input.strip():
-            st.subheader("🤖 査読AI用 プロンプト自動生成")
-            st.caption("以下のプロンプトをコピーして、生成AIに投入してください。実際の審査会で指摘されやすいポイントを厳格に評価します。")
-
-            full_review_prompt = f"""あなたは農業試験研究機関における、経験豊富な「試験成績書・審査委員（査読官）」です。
-若手・中堅研究者が執筆した以下の試験成績書原稿を厳しく査読し、専門部会や審査会で一発通過できるレベルに引き上げるための修正・指摘リストを作成してください。
-
-【査読対象の成績書原稿】
-{review_input}
+        full_review_prompt = """あなたは農業試験研究機関における、経験豊富な「試験成績書・審査委員（査読官）」です。
+若手・中堅研究者が執筆した試験成績書原稿（一緒にアップロードされたファイル、または提示されたテキスト）を厳しく査読し、専門部会や審査会で一発通過できるレベルに引き上げるための修正・指摘リストを作成してください。
 
 以下の「査読5大原則」に基づき、客観的かつ厳格に精査し、Markdown形式で構造化して出力してください。
 
@@ -383,9 +361,7 @@ def main():
 ### 4. 統計・記述ルールチェック
 - p値の表記法、検定手法の明記状態、GLM/GLMMなど高度なモデリングがある場合はその変数設定の妥当性について、修正すべき点があれば指摘してください。"""
 
-            st.code(full_review_prompt, language="markdown")
-        else:
-            st.info("👆 上記に原稿ファイルを入れるかテキストを貼り付けると、実際の査読基準に沿ったAI用プロンプトがここに生成されます。")
+        st.code(full_review_prompt, language="markdown")
 
 if __name__ == "__main__":
     main()
