@@ -1,2 +1,2 @@
 streamlit
-starlette<1.0.0⁠
+starlette
